@@ -6,7 +6,6 @@
 
 #define CLIENT_ID_PREFIX "esp8266-"
 
-const char *ClientId  = "ESP8266_MQTT";
 const char *ssid = "OpenWrt_NAT_500GP.101";
 const char *pass = "activegateway";
 
@@ -74,7 +73,7 @@ void setup()
   Serial.println(clientId);
 
   
-  while(!client.connect(ClientId)){
+  while(!client.connect(clientId)){
     Serial.print("Connect...");
     delay(500);
   }
