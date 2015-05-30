@@ -34,10 +34,7 @@ void setup()
   
   int retries = 0;
   while ((WiFi.status() != WL_CONNECTED)) {
-
-
-    Serial.print(".");
-    
+    Serial.print(".");   
     if(retries > WIFI_MAX_RETRIES){
       Serial.println("Reset due to WIFI_MAX_RETRIES");
       abort();
