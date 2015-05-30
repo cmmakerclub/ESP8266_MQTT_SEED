@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <Ticker.h>
 
 #define WIFI_MAX_RETRIES 150
 #define WIFI_CONNECT_DELAY_MS 100
@@ -31,6 +32,8 @@
 
 const char *ssid = "OpenWrt_NAT_500GP.101";
 const char *pass = "activegateway";
+
+Ticker publisher;
 
 char* clientId;
 char* clientTopic;
@@ -224,9 +227,11 @@ void setup()
   // READY
   visualNotify(STATE_READY_TO_GO);
   
+  publisher.attach_ms(1000, fn_publisher);
+  
 }
 
-void loop()
+void fn_publisher()
 {
   #ifdef DEBUG_MODE
     static unsigned long counter = 0;
@@ -238,7 +243,12 @@ void loop()
     payload += "}";
     
     client.publish("/pao/esp8266",payload);
-  #endif  
+  #endif 
+}
+
+void loop()
+{
+   
   
   client.loop();
 }
