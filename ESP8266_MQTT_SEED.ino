@@ -103,7 +103,8 @@ void visualNotify(uint8_t state) {
         delay(50);
         blink_ms(100);
       #endif  
-    }else if(state == STATE_GOT_CLIENT_ID){
+    }
+    else if (state == STATE_GOT_CLIENT_ID) {
       #ifdef DEBUG_MODE
         Serial.println(clientId);
       #endif
