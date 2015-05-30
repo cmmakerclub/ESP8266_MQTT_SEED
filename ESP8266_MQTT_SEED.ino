@@ -4,7 +4,11 @@
 #define WIFI_MAX_RETRIES 150
 #define WIFI_CONNECT_DELAY_MS 100
 
-// #define DEBUG_MODE
+#define DEBUG_MODE
+
+#ifndef DEBUG_MODE
+  #define PRODUCTION_MODE
+#endif
 
 #define CLIENT_ID_PREFIX "esp8266-"
 
@@ -14,6 +18,10 @@
 #define STATE_MQTT_SUBSCRIBED   3
 #define STATE_READY_TO_GO       4
 
+//-------
+#define STATE_GOT_CLIENT_ID     5
+
+//-------
 
 #define LED_PIN 1 // <<<==== 1 = TX0 PIN 
 
@@ -28,9 +36,9 @@ PubSubClient client(server);
 
 void callback(const MQTT::Publish& pub) {
 
-  Serial.print(pub.topic());
-  Serial.print(" => ");
-  Serial.println(pub.payload_string());
+//  Serial.print(pub.topic());
+//  Serial.print(" => ");
+//  Serial.println(pub.payload_string());
   
 }
 
@@ -52,16 +60,16 @@ String macToStr(char* target)
   return result;
 }
 
-
+#ifndef DEBUG_MODE
 void blink_ms(uint8_t millisecs) {
   digitalWrite(LED_PIN, HIGH);
   delay(millisecs);
   digitalWrite(LED_PIN, LOW);  
   delay(millisecs);
 }
+#endif
 
 void visualNotify(uint8_t state) {
-
 
     if (state == STATE_WIFI_CONNECTING) {
       #ifdef DEBUG_MODE      
@@ -71,10 +79,19 @@ void visualNotify(uint8_t state) {
       #endif  
     }
     else if (state == STATE_MQTT_CONNECTED) {
+      #ifdef DEBUG_MODE  
+        Serial.println("MQTT Connected");
+      #else  
         blink_ms(30);
+      #endif
+    
     }
     else if (state == STATE_MQTT_SUBSCRIBED) {
+      #ifdef DEBUG_MODE
+        Serial.println("Subscribe...");
+      #else  
         blink_ms(30);
+      #endif
     }
     else if (state == STATE_WIFI_CONNECTED) {
       #ifdef DEBUG_MODE      
@@ -86,6 +103,10 @@ void visualNotify(uint8_t state) {
         delay(50);
         blink_ms(100);
       #endif  
+    }else if(state == STATE_GOT_CLIENT_ID){
+      #ifdef DEBUG_MODE
+        Serial.println(clientId);
+      #endif
     }
   
   
@@ -93,8 +114,6 @@ void visualNotify(uint8_t state) {
 
 void setup()
 {
-
-
   client.set_callback(callback);
 
   #ifdef DEBUG_MODE
@@ -121,24 +140,17 @@ void setup()
     delay(WIFI_CONNECT_DELAY_MS); 
   }
 
-
   visualNotify(STATE_WIFI_CONNECTED);
-
-
+  
   macToStr(clientId);
-
-  Serial.println(clientId);
-
   
   while(!client.connect(clientId)){
     Serial.print("Connect...");
     delay(500);
   }
   
-  Serial.println("MQTT Connected");
-  
   while(!client.subscribe("/pao/esp8266")){
-    Serial.println("Subscribe...");
+    
     delay(500);
   }
   
