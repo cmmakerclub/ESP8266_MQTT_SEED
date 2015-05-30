@@ -4,11 +4,13 @@
 #define WIFI_MAX_RETRIES 150
 #define WIFI_CONNECT_DELAY_MS 100
 
+#define CLIENT_ID_PREFIX "esp8266-"
+
 const char *ClientId  = "ESP8266_MQTT";
 const char *ssid = "OpenWrt_NAT_500GP.101";
 const char *pass = "activegateway";
 
-char clientId[30];
+char clientId[35];
 
 IPAddress server(128,199,191,223);
 
@@ -32,7 +34,11 @@ String macToStr(char* target)
     if (i < 5)
       result += ':';
   }
-  strcpy(target, (char*)result.c_str());  
+  
+  uint8_t len = strlen(CLIENT_ID_PREFIX);
+  memcpy(target, CLIENT_ID_PREFIX, len);
+  strcpy(target+len, (char*)result.c_str());  
+
   return result;
 }
 
@@ -62,8 +68,11 @@ void setup()
   }
 
   Serial.println("\n WiFi connected");
-  macToStr(clientId);  
+
+  macToStr(clientId);
+
   Serial.println(clientId);
+
   
   while(!client.connect(ClientId)){
     Serial.print("Connect...");
