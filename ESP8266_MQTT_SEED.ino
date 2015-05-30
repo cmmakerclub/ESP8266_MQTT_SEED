@@ -24,7 +24,7 @@
 
 //-------
 #define STATE_GOT_CLIENT_ID      7
-
+#define STATE_RESET              8
 //-------
 
 #define LED_PIN 1 // <<<==== 1 = TX0 PIN 
@@ -139,6 +139,13 @@ void visualNotify(uint8_t state) {
         blink_ms(100);        
       #endif
     }
+    else if (state == STATE_RESET) {
+      #ifdef DEBUG_MODE
+        Serial.println("\nReset due to WIFI_MAX_RETRIES");
+      #else
+        
+      #endif
+    }
     else {
       // UN-HANDLED
       // IMPOSIBLE TO REACH
@@ -168,7 +175,7 @@ void setup()
   while ((WiFi.status() != WL_CONNECTED)) {
     visualNotify(STATE_WIFI_CONNECTING);    
     if(retries > WIFI_MAX_RETRIES){
-      Serial.println("\nReset due to WIFI_MAX_RETRIES");
+      visualNotify(STATE_RESET);
       abort();
     }
     retries++;
