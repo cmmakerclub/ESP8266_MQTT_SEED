@@ -1,9 +1,10 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-
 #define WIFI_MAX_RETRIES 150
 #define WIFI_CONNECT_DELAY_MS 100
+
+const char *ClientId  = "ESP8266_MQTT";
 const char *ssid = "OpenWrt_NAT_500GP.101";
 const char *pass = "activegateway";
 
@@ -11,15 +12,12 @@ IPAddress server(128,199,191,223);
 
 PubSubClient client(server);
 
-// Callback function
 void callback(const MQTT::Publish& pub) {
-  // In order to republish this payload, a copy must be made
-  // as the orignal payload buffer will be overwritten whilst
-  // constructing the PUBLISH packet.
 
-  // Copy the payload to a new message
-  MQTT::Publish newpub("/pao/esp8266", pub.payload(), pub.payload_len());
-  client.publish(newpub);
+  Serial.print(pub.topic());
+  Serial.print(" => ");
+  Serial.println(pub.payload_string());
+  
 }
 
 void setup()
@@ -48,13 +46,20 @@ void setup()
     delay(WIFI_CONNECT_DELAY_MS); 
   }
   
-   Serial.println("\n WiFi connected");
-
-
-  if (client.connect("arduinoClient")) {
-    client.publish("/pao/esp8266","hello world");
-    client.subscribe("/pao/esp8266");
+  Serial.println("\nWiFi connected");
+  
+  while(!client.connect(ClientId)){
+    Serial.print("Connect...");
+    delay(500);
   }
+  
+  Serial.println("MQTT Connected");
+  
+  while(!client.subscribe("/pao/esp8266")){
+    Serial.println("Subscribe...");
+    delay(500);
+  }
+  
 }
 
 void loop()
