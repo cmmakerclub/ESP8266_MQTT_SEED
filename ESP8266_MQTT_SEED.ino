@@ -4,7 +4,7 @@
 #define WIFI_MAX_RETRIES 150
 #define WIFI_CONNECT_DELAY_MS 100
 
-#define DEBUG_MODE
+// #define DEBUG_MODE
 
 #ifndef DEBUG_MODE
   #define PRODUCTION_MODE
@@ -39,20 +39,24 @@ IPAddress server(128,199,191,223);
 PubSubClient client(server);
 
 void callback(const MQTT::Publish& pub) {
-  
   // MQTT SUBSCRIBE
-  if(pub.payload_string() == "1") {
-    
-  }else if (pub.payload_string() == "2"){
-  
-  }else{
-  
-    Serial.print(pub.topic());
-    Serial.print(" => ");
-    Serial.println(pub.payload_string());
-    
+  if (pub.payload_string() == "0") {
+    #ifdef DEBUG_MODE
+      Serial.println("GOT STRING 0...");
+    #endif
   }
-  
+  else if (pub.payload_string() == "1"){
+    #ifdef DEBUG_MODE
+      Serial.println("GOT STRING 1..");
+    #endif
+  }
+  else {
+    #ifdef DEBUG_MODE
+      Serial.print(pub.topic());
+      Serial.print(" => ");
+      Serial.println(pub.payload_string());
+    #endif
+  }
 }
 
 String macToStr(char* target)
