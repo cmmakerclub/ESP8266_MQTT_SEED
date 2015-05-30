@@ -38,7 +38,7 @@ Ticker publisher;
 char* clientId;
 char* clientTopic;
 
-IPAddress server(128,199,191,223);
+IPAddress server(128,199,104,122);
 
 PubSubClient client(server);
 
@@ -233,7 +233,6 @@ void setup()
 
 void fn_publisher()
 {
-  #ifdef DEBUG_MODE
     static unsigned long counter = 0;
     
     String payload = "{\"millis\":";
@@ -242,14 +241,21 @@ void fn_publisher()
     payload += counter;
     payload += "}";
     
-    client.publish("/pao/esp8266",payload);
-  #endif 
+    
+    if (client.publish(clientTopic, payload)) {
+      #ifdef DEBUG_MODE
+        Serial.println("PUBLISHED OK");
+      #endif
+    }
+    else {
+      #ifdef DEBUG_MODE
+        Serial.println("PUBLISHED ERROR");
+      #endif
+    }  
 }
 
 void loop()
 {
-   
-  
   client.loop();
 }
 
