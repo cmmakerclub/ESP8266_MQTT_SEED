@@ -4,7 +4,7 @@
 #define WIFI_MAX_RETRIES 150
 #define WIFI_CONNECT_DELAY_MS 100
 
-// #define DEBUG_MODE
+#define DEBUG_MODE
 
 #ifndef DEBUG_MODE
   #define PRODUCTION_MODE
@@ -57,6 +57,12 @@ void callback(const MQTT::Publish& pub) {
       Serial.println(pub.payload_string());
     #endif
   }
+  
+  #ifdef DEBUG_MODE
+    MQTT::Publish newpub("/pao/esp8266", pub.payload(), pub.payload_len());
+    client.publish(newpub);
+  #endif
+  
 }
 
 String macToStr(char* target)
@@ -205,6 +211,18 @@ void setup()
 
 void loop()
 {
+  #ifdef DEBUG_MODE
+    static unsigned long counter = 0;
+    
+    String payload = "{\"millis\":";
+    payload += millis();
+    payload += ",\"counter\":";
+    payload += counter;
+    payload += "}";
+    
+    client.publish("/pao/esp8266",payload);
+  #endif  
+  
   client.loop();
 }
 
