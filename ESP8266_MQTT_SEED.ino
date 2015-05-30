@@ -8,6 +8,8 @@ const char *ClientId  = "ESP8266_MQTT";
 const char *ssid = "OpenWrt_NAT_500GP.101";
 const char *pass = "activegateway";
 
+char clientId[30];
+
 IPAddress server(128,199,191,223);
 
 PubSubClient client(server);
@@ -19,6 +21,22 @@ void callback(const MQTT::Publish& pub) {
   Serial.println(pub.payload_string());
   
 }
+
+String macToStr(char* target)
+{
+  uint8_t mac[6];
+  WiFi.macAddress(mac);  
+  String result;
+  for (int i = 0; i < 6; ++i) {
+    result += String(mac[i], 16);
+    if (i < 5)
+      result += ':';
+  }
+  strcpy(target, (char*)result.c_str());  
+  return result;
+}
+
+
 
 void setup()
 {
@@ -42,8 +60,10 @@ void setup()
     retries++;
     delay(WIFI_CONNECT_DELAY_MS); 
   }
-  
-  Serial.println("\nWiFi connected");
+
+  Serial.println("\n WiFi connected");
+  macToStr(clientId);  
+  Serial.println(clientId);
   
   while(!client.connect(ClientId)){
     Serial.print("Connect...");
