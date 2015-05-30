@@ -175,11 +175,16 @@ void visualNotify(uint8_t state) {
 void fn_publisher()
 {
     static unsigned long counter = 0;
+    #define DEVICE_NAME "__DEVICE__NAME__MUST__CHANGE"
     
     String payload = "{\"millis\":";
     payload += millis();
     payload += ",\"counter\":";
     payload += ++counter;
+    payload += ", \"nickname\":";
+    payload += " \"";
+    payload += DEVICE_NAME;
+    payload += "\"";
     payload += "}";
     
     
@@ -259,7 +264,7 @@ void loop()
 {
     client.loop();
 
-    if (millis() - prevMillisPub > 1000) {
+    if (millis() - prevMillisPub > 3000) {
       prevMillisPub = millis();
       fn_publisher();
     }
