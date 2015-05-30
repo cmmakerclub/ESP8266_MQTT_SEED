@@ -38,6 +38,8 @@ Ticker publisher;
 char* clientId;
 char* clientTopic;
 
+unsigned long prevMillisPub = 0;
+
 IPAddress server(128,199,104,122);
 
 PubSubClient client(server);
@@ -168,8 +170,29 @@ void visualNotify(uint8_t state) {
       // UN-HANDLED
       // IMPOSIBLE TO REACH
     }
-  
-  
+}
+
+void fn_publisher()
+{
+    static unsigned long counter = 0;
+    
+    String payload = "{\"millis\":";
+    payload += millis();
+    payload += ",\"counter\":";
+    payload += ++counter;
+    payload += "}";
+    
+    
+    if (client.publish(clientTopic, payload)) {
+      #ifdef DEBUG_MODE
+        Serial.println("PUBLISHED OK.");
+      #endif
+    }
+    else {
+      #ifdef DEBUG_MODE
+        Serial.println("PUBLISHED ERROR.");
+      #endif
+    }  
 }
 
 void setup()
@@ -227,35 +250,18 @@ void setup()
   // READY
   visualNotify(STATE_READY_TO_GO);
   
-  publisher.attach_ms(1000, fn_publisher);
+  // publisher.attach_ms(1000, fn_publisher);
   
 }
 
-void fn_publisher()
-{
-    static unsigned long counter = 0;
-    
-    String payload = "{\"millis\":";
-    payload += millis();
-    payload += ",\"counter\":";
-    payload += counter;
-    payload += "}";
-    
-    
-    if (client.publish(clientTopic, payload)) {
-      #ifdef DEBUG_MODE
-        Serial.println("PUBLISHED OK");
-      #endif
-    }
-    else {
-      #ifdef DEBUG_MODE
-        Serial.println("PUBLISHED ERROR");
-      #endif
-    }  
-}
 
 void loop()
 {
-  client.loop();
+    client.loop();
+
+    if (millis() - prevMillisPub > 1000) {
+      prevMillisPub = millis();
+      fn_publisher();
+    }
 }
 
