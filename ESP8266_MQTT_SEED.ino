@@ -32,7 +32,8 @@
 const char *ssid = "OpenWrt_NAT_500GP.101";
 const char *pass = "activegateway";
 
-char clientId[35];
+char* clientId;
+char* clientTopic;
 
 IPAddress server(128,199,191,223);
 
@@ -65,7 +66,7 @@ void callback(const MQTT::Publish& pub) {
   
 }
 
-String macToStr(char* target)
+char* getClientId()
 {
   uint8_t mac[6];
   WiFi.macAddress(mac);  
@@ -75,12 +76,13 @@ String macToStr(char* target)
     if (i < 5)
       result += ':';
   }
-  
-  uint8_t len = strlen(CLIENT_ID_PREFIX);
-  memcpy(target, CLIENT_ID_PREFIX, len);
-  strcpy(target+len, (char*)result.c_str());  
 
-  return result;
+  uint8_t len = strlen(CLIENT_ID_PREFIX);
+  char* buff = (char* )malloc(len+result.length()+1);
+  memcpy(buff, CLIENT_ID_PREFIX, len);
+  strcpy(buff+len, (char*)result.c_str());
+
+  return buff;
 }
 
 #ifndef DEBUG_MODE
@@ -113,6 +115,13 @@ void visualNotify(uint8_t state) {
         Serial.println(clientId);
       #endif
     }
+    else if (state == STATE_MQTT_CONNECTING) {
+      #ifdef DEBUG_MODE  
+        Serial.println("\nMQTT connecting...");
+      #else  
+        blink_ms(30);
+      #endif
+    }        
     else if (state == STATE_MQTT_CONNECTED) {
       #ifdef DEBUG_MODE  
         Serial.println("\nMQTT Connected.");
@@ -189,8 +198,14 @@ void setup()
   }
 
   visualNotify(STATE_WIFI_CONNECTED);
-  macToStr(clientId);
-  
+
+  clientId = getClientId();
+
+  clientTopic = (char* )malloc(strlen(clientId) + 10);
+  memcpy(clientTopic, clientId, strlen(clientId));
+  strcpy(clientTopic+strlen(clientId), "/data");
+
+
   // Connect to mqtt broker
   while(!client.connect(clientId)){
     visualNotify(STATE_MQTT_CONNECTING);
@@ -203,8 +218,10 @@ void setup()
     visualNotify(STATE_MQTT_SUBSCRIBING);
     delay(500);
   }
+
   visualNotify(STATE_MQTT_SUBSCRIBED);
 
+  // READY
   visualNotify(STATE_READY_TO_GO);
   
 }
