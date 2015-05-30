@@ -12,6 +12,8 @@
 #endif
 
 #define CLIENT_ID_PREFIX "esp8266-"
+#define DEVICE_NAME "__CHANGE_THIS__LINE__"
+
 
 #define STATE_WIFI_CONNECTING    0
 #define STATE_WIFI_CONNECTED     1
@@ -63,7 +65,6 @@ void callback(const MQTT::Publish& pub) {
       Serial.println(pub.payload_string());
     #endif
   }
-  
 }
 
 char* getClientId()
@@ -85,7 +86,7 @@ char* getClientId()
   return buff;
 }
 
-#ifndef DEBUG_MODE
+#ifdef PRODUCTION_MODE 
 void blink_ms(uint8_t millisecs) {
   digitalWrite(LED_PIN, HIGH);
   delay(millisecs);
@@ -170,7 +171,6 @@ void visualNotify(uint8_t state) {
 void fn_publisher()
 {
     static unsigned long counter = 0;
-    #define DEVICE_NAME "__DEVICE__NAME__MUST__CHANGE"
     
     String payload = "{\"millis\":";
     payload += millis();
@@ -231,6 +231,8 @@ void setup()
   memcpy(clientTopic, clientId, strlen(clientId));
   strcpy(clientTopic+strlen(clientId), "/data");
 
+
+  visualNotify(STATE_GOT_CLIENT_ID);
 
   // Connect to mqtt broker
   while(!client.connect(clientId)){
