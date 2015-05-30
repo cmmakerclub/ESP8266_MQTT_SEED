@@ -40,9 +40,9 @@ PubSubClient client(server);
 
 void callback(const MQTT::Publish& pub) {
 
-//  Serial.print(pub.topic());
-//  Serial.print(" => ");
-//  Serial.println(pub.payload_string());
+  Serial.print(pub.topic());
+  Serial.print(" => ");
+  Serial.println(pub.payload_string());
   
 }
 
@@ -173,7 +173,7 @@ void setup()
   visualNotify(STATE_MQTT_CONNECTED);
   
   // Subscibe to the topic
-  while(!client.subscribe("/pao/esp8266")){
+  while(!client.subscribe(clientId)){
     visualNotify(STATE_MQTT_SUBSCRIBING);
     delay(500);
   }
