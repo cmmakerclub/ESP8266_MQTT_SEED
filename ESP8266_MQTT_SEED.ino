@@ -35,7 +35,7 @@ const char *pass = "activegateway";
 char* clientId;
 char* clientTopic;
 
-IPAddress server(128,199,191,223);
+IPAddress server(128,199,104,122);
 
 PubSubClient client(server);
 
@@ -228,7 +228,6 @@ void setup()
 
 void loop()
 {
-  #ifdef DEBUG_MODE
     static unsigned long counter = 0;
     
     String payload = "{\"millis\":";
@@ -237,8 +236,16 @@ void loop()
     payload += counter;
     payload += "}";
     
-    client.publish("/pao/esp8266",payload);
-  #endif  
+    if (client.publish(clientTopic, payload)) {
+      #ifdef DEBUG_MODE
+        Serial.println("PUBLISHED OK");
+      #endif
+    }
+    else {
+      #ifdef DEBUG_MODE
+        Serial.println("PUBLISHED ERROR");
+      #endif
+    }
   
   client.loop();
 }
