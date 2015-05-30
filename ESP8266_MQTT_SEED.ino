@@ -84,7 +84,7 @@ void visualNotify(uint8_t state) {
     }
     else if (state == STATE_WIFI_CONNECTED) {
       #ifdef DEBUG_MODE      
-        Serial.print("Wifi connected.");
+        Serial.print("\nWifi connected.");
       #else
         //  DO NOTTHING.
       #endif  
@@ -96,7 +96,7 @@ void visualNotify(uint8_t state) {
     }
     else if (state == STATE_MQTT_CONNECTED) {
       #ifdef DEBUG_MODE  
-        Serial.println("MQTT Connected.");
+        Serial.println("\nMQTT Connected.");
       #else  
         blink_ms(30);
       #endif
@@ -115,17 +115,6 @@ void visualNotify(uint8_t state) {
         blink_ms(30);
       #endif
     }    
-    else if (state == STATE_READY_TO_GO) {
-      #ifdef DEBUG_MODE
-        Serial.println("READY TO GO");
-      #else
-        blink_ms(100);
-        delay(50);
-        blink_ms(100);
-        delay(50);
-        blink_ms(100);        
-      #endif
-    }
     else if (state == STATE_READY_TO_GO) {
       #ifdef DEBUG_MODE
         Serial.println("READY TO GO");
@@ -166,7 +155,7 @@ void setup()
   while ((WiFi.status() != WL_CONNECTED)) {
     visualNotify(STATE_WIFI_CONNECTING);    
     if(retries > WIFI_MAX_RETRIES){
-      Serial.println("Reset due to WIFI_MAX_RETRIES");
+      Serial.println("\nReset due to WIFI_MAX_RETRIES");
       abort();
     }
     retries++;
