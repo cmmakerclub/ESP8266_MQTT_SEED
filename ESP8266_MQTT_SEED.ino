@@ -12,14 +12,18 @@
 
 #define CLIENT_ID_PREFIX "esp8266-"
 
-#define STATE_WIFI_CONNECTING   0
-#define STATE_WIFI_CONNECTED    1
-#define STATE_MQTT_CONNECTED    2
-#define STATE_MQTT_SUBSCRIBED   3
-#define STATE_READY_TO_GO       4
+#define STATE_WIFI_CONNECTING    0
+#define STATE_WIFI_CONNECTED     1
+
+#define STATE_MQTT_CONNECTING    2
+#define STATE_MQTT_CONNECTED     3
+#define STATE_MQTT_SUBSCRIBING   4
+#define STATE_MQTT_SUBSCRIBED    5
+
+#define STATE_READY_TO_GO        6
 
 //-------
-#define STATE_GOT_CLIENT_ID     5
+#define STATE_GOT_CLIENT_ID      7
 
 //-------
 
@@ -78,36 +82,64 @@ void visualNotify(uint8_t state) {
         blink_ms(30);
       #endif  
     }
-    else if (state == STATE_MQTT_CONNECTED) {
-      #ifdef DEBUG_MODE  
-        Serial.println("MQTT Connected");
-      #else  
-        blink_ms(30);
-      #endif
-    
-    }
-    else if (state == STATE_MQTT_SUBSCRIBED) {
-      #ifdef DEBUG_MODE
-        Serial.println("Subscribe...");
-      #else  
-        blink_ms(30);
-      #endif
-    }
     else if (state == STATE_WIFI_CONNECTED) {
       #ifdef DEBUG_MODE      
         Serial.print("Wifi connected.");
       #else
-        blink_ms(100);
-        delay(50);
-        blink_ms(100);
-        delay(50);
-        blink_ms(100);
+        //  DO NOTTHING.
       #endif  
     }
     else if (state == STATE_GOT_CLIENT_ID) {
       #ifdef DEBUG_MODE
         Serial.println(clientId);
       #endif
+    }
+    else if (state == STATE_MQTT_CONNECTED) {
+      #ifdef DEBUG_MODE  
+        Serial.println("MQTT Connected.");
+      #else  
+        blink_ms(30);
+      #endif
+    }    
+    else if (state == STATE_MQTT_SUBSCRIBING) {
+      #ifdef DEBUG_MODE
+        Serial.println("Subscibing");
+      #else
+        blink_ms(30);
+      #endif
+    }
+    else if (state == STATE_MQTT_SUBSCRIBED) {
+      #ifdef DEBUG_MODE
+        Serial.println("Subscribed...");
+      #else  
+        blink_ms(30);
+      #endif
+    }    
+    else if (state == STATE_READY_TO_GO) {
+      #ifdef DEBUG_MODE
+        Serial.println("READY TO GO");
+      #else
+        blink_ms(100);
+        delay(50);
+        blink_ms(100);
+        delay(50);
+        blink_ms(100);        
+      #endif
+    }
+    else if (state == STATE_READY_TO_GO) {
+      #ifdef DEBUG_MODE
+        Serial.println("READY TO GO");
+      #else
+        blink_ms(100);
+        delay(50);
+        blink_ms(100);
+        delay(50);
+        blink_ms(100);        
+      #endif
+    }
+    else {
+      // UN-HANDLED
+      // IMPOSIBLE TO REACH
     }
   
   
@@ -142,18 +174,23 @@ void setup()
   }
 
   visualNotify(STATE_WIFI_CONNECTED);
-  
   macToStr(clientId);
   
+  // Connect to mqtt broker
   while(!client.connect(clientId)){
-    Serial.print("Connect...");
+    visualNotify(STATE_MQTT_CONNECTING);
     delay(500);
   }
+  visualNotify(STATE_MQTT_CONNECTED);
   
+  // Subscibe to the topic
   while(!client.subscribe("/pao/esp8266")){
-    
+    visualNotify(STATE_MQTT_SUBSCRIBING);
     delay(500);
   }
+  visualNotify(STATE_MQTT_SUBSCRIBED);
+
+  visualNotify(STATE_READY_TO_GO);
   
 }
 
