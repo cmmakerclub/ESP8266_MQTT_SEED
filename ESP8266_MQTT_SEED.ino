@@ -64,11 +64,6 @@ void callback(const MQTT::Publish& pub) {
     #endif
   }
   
-  #ifdef DEBUG_MODE
-    MQTT::Publish newpub("/pao/esp8266", pub.payload(), pub.payload_len());
-    client.publish(newpub);
-  #endif
-  
 }
 
 char* getClientId()
