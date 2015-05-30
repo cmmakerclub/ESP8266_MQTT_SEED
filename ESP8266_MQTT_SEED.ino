@@ -39,10 +39,19 @@ IPAddress server(128,199,191,223);
 PubSubClient client(server);
 
 void callback(const MQTT::Publish& pub) {
-
-  Serial.print(pub.topic());
-  Serial.print(" => ");
-  Serial.println(pub.payload_string());
+  
+  // MQTT SUBSCRIBE
+  if(pub.payload_string() == "1") {
+    
+  }else if (pub.payload_string() == "2"){
+  
+  }else{
+  
+    Serial.print(pub.topic());
+    Serial.print(" => ");
+    Serial.println(pub.payload_string());
+    
+  }
   
 }
 
