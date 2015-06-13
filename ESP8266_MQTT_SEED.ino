@@ -44,7 +44,7 @@ unsigned long prevMillisPub = 0;
 
 IPAddress server(128,199,104,122);
 
-PubSubClient client(server);
+PubSubClient client("m11.cloudmqtt.com", 15854);
 
 void callback(const MQTT::Publish& pub) {
   // MQTT SUBSCRIBE
@@ -235,7 +235,7 @@ void setup()
   visualNotify(STATE_GOT_CLIENT_ID);
 
   // Connect to mqtt broker
-  while(!client.connect(clientId)){
+  while(!client.connect(MQTT::Connect("arduinoClient") .set_auth("test", "test"))) {
     visualNotify(STATE_MQTT_CONNECTING);
     delay(500);
   }
@@ -266,4 +266,3 @@ void loop()
       fn_publisher();
     }
 }
-
