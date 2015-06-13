@@ -12,7 +12,7 @@
 #endif
 
 #define CLIENT_ID_PREFIX "esp8266-"
-#define DEVICE_NAME "__CHANGE_THIS__LINE__"
+#define DEVICE_NAME "NAT"
 
 
 #define STATE_WIFI_CONNECTING    0
@@ -233,9 +233,11 @@ void setup()
 
 
   visualNotify(STATE_GOT_CLIENT_ID);
+  MQTT::Connect connectObject = MQTT::Connect(clientId);
+  // connectObject = connectObject.set_auth();
 
   // Connect to mqtt broker
-  while(!client.connect(MQTT::Connect("arduinoClient") .set_auth("test", "test"))) {
+  while(!client.connect(connectObject)) {
     visualNotify(STATE_MQTT_CONNECTING);
     delay(500);
   }
