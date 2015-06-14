@@ -3,9 +3,20 @@
 #include <Ticker.h>
 
 #define WIFI_MAX_RETRIES 150
-#define WIFI_CONNECT_DELAY_MS 100
+#define WIFI_CONNECT_DELAY_MS 1000
 
 #define DEBUG_MODE
+
+
+#define DEBUG_PRINTER Serial
+
+#ifdef DEBUG_MODE
+#define DEBUG_PRINT(...) { DEBUG_PRINTER.print(__VA_ARGS__); }
+#define DEBUG_PRINTLN(...) { DEBUG_PRINTER.println(__VA_ARGS__); }
+#else
+#define DEBUG_PRINT(...) {}
+#define DEBUG_PRINTLN(...) {}
+#endif
 
 #ifndef DEBUG_MODE
 #define PRODUCTION_MODE
@@ -42,28 +53,28 @@ char* clientTopic;
 
 unsigned long prevMillisPub = 0;
 
-IPAddress server(128,199,104,122);
+// IPAddress server(128,199,104,122);
 
-PubSubClient client("m11.cloudmqtt.com", 15854);
+// PubSubClient client("m20.cloudmqtt.com", 17380);
+PubSubClient client("128.199.104.122", 1883);
 
-void callback(const MQTT::Publish& pub) {
+
+void callback(const MQTT::Publish& pub)
+{
     // MQTT SUBSCRIBE
-    if (pub.payload_string() == "0") {
-#ifdef DEBUG_MODE
-        Serial.println("GOT STRING 0...");
-#endif
+    if (pub.payload_string() == "0")
+    {
+        DEBUG_PRINTLN("GOT STRING 0...");
     }
-    else if (pub.payload_string() == "1") {
-#ifdef DEBUG_MODE
-        Serial.println("GOT STRING 1..");
-#endif
+    else if (pub.payload_string() == "1")
+    {
+        DEBUG_PRINTLN("GOT STRING 1..");
     }
-    else {
-#ifdef DEBUG_MODE
-        Serial.print(pub.topic());
-        Serial.print(" => ");
-        Serial.println(pub.payload_string());
-#endif
+    else
+    {
+        DEBUG_PRINT(pub.topic());
+        DEBUG_PRINT(" => ");
+        DEBUG_PRINTLN(pub.payload_string());
     }
 }
 
@@ -72,7 +83,8 @@ char* getClientId()
     uint8_t mac[6];
     WiFi.macAddress(mac);
     String result;
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 6; ++i)
+    {
         result += String(mac[i], 16);
         if (i < 5)
             result += ':';
@@ -87,7 +99,8 @@ char* getClientId()
 }
 
 #ifdef PRODUCTION_MODE
-void blink_ms(uint8_t millisecs) {
+void blink_ms(uint8_t millisecs)
+{
     digitalWrite(LED_PIN, HIGH);
     delay(millisecs);
     digitalWrite(LED_PIN, LOW);
@@ -95,81 +108,62 @@ void blink_ms(uint8_t millisecs) {
 }
 #endif
 
-void visualNotify(uint8_t state) {
-
-    if (state == STATE_WIFI_CONNECTING) {
-#ifdef DEBUG_MODE
-        Serial.print(".");
-#else
-        blink_ms(30);
-#endif
+void visualNotify(uint8_t state)
+{
+    if (state == STATE_WIFI_CONNECTING)
+    {
+        DEBUG_PRINT(WiFi.status());
+        DEBUG_PRINT(" ");
     }
-    else if (state == STATE_WIFI_CONNECTED) {
-#ifdef DEBUG_MODE
-        Serial.print("\nWifi connected.");
-#else
-        //  DO NOTTHING.
-#endif
+    else if (state == STATE_WIFI_CONNECTED)
+    {
+        DEBUG_PRINT("\nWifi connected.");
     }
-    else if (state == STATE_GOT_CLIENT_ID) {
-#ifdef DEBUG_MODE
-        Serial.println(clientId);
-#endif
+    else if (state == STATE_GOT_CLIENT_ID)
+    {
+        DEBUG_PRINTLN(clientId);
     }
-    else if (state == STATE_MQTT_CONNECTING) {
-#ifdef DEBUG_MODE
-        Serial.println("\nMQTT connecting...");
-#else
-        blink_ms(30);
-#endif
+    else if (state == STATE_MQTT_CONNECTING)
+    {
+        DEBUG_PRINTLN("\nMQTT connecting...");
     }
-    else if (state == STATE_MQTT_CONNECTED) {
-#ifdef DEBUG_MODE
-        Serial.println("\nMQTT Connected.");
-#else
-        blink_ms(30);
-#endif
+    else if (state == STATE_MQTT_CONNECTED)
+    {
+        DEBUG_PRINTLN("\nMQTT Connected.");
     }
-    else if (state == STATE_MQTT_SUBSCRIBING) {
-#ifdef DEBUG_MODE
-        Serial.println("Subscibing");
-#else
-        blink_ms(30);
-#endif
+    else if (state == STATE_MQTT_SUBSCRIBING)
+    {
+        DEBUG_PRINT("Subscibing... to " );
+        DEBUG_PRINTLN(clientId);
     }
-    else if (state == STATE_MQTT_SUBSCRIBED) {
-#ifdef DEBUG_MODE
-        Serial.println("Subscribed...");
-#else
-        blink_ms(30);
-#endif
+    else if (state == STATE_MQTT_SUBSCRIBED)
+    {
+        DEBUG_PRINT("Subscribed... to ");
+        DEBUG_PRINTLN(clientTopic);
     }
-    else if (state == STATE_READY_TO_GO) {
-#ifdef DEBUG_MODE
-        Serial.println("READY TO GO");
-#else
-        blink_ms(100);
-        delay(50);
-        blink_ms(100);
-        delay(50);
-        blink_ms(100);
-#endif
+    else if (state == STATE_READY_TO_GO)
+    {
+        DEBUG_PRINTLN("READY TO GO");
     }
-    else if (state == STATE_RESET) {
-#ifdef DEBUG_MODE
-        Serial.println("\nReset due to WIFI_MAX_RETRIES");
-#else
-
-#endif
+    else if (state == STATE_RESET)
+    {
+        DEBUG_PRINTLN("\nReset due to WIFI_MAX_RETRIES");
     }
-    else {
+    else
+    {
         // UN-HANDLED
-        // IMPOSIBLE TO REACH
+        // SHOULD NOT REACHED
     }
 }
 
 void fn_publisher()
 {
+    if (millis() - prevMillisPub < 3000)
+    {
+        return;
+    }
+
+    prevMillisPub = millis();
     static unsigned long counter = 0;
 
     String payload = "{\"millis\":";
@@ -183,39 +177,100 @@ void fn_publisher()
     payload += "}";
 
 
-    if (client.publish(clientTopic, payload)) {
-#ifdef DEBUG_MODE
-        Serial.println("PUBLISHED OK.");
-#endif
+    if (client.publish(clientTopic, payload))
+    {
+        DEBUG_PRINTLN("PUBLISHED OK.");
     }
-    else {
-#ifdef DEBUG_MODE
-        Serial.println("PUBLISHED ERROR.");
-#endif
+    else
+    {
+        DEBUG_PRINTLN("PUBLISHED ERROR.");
     }
 }
 
 
 void connectMqtt()
 {
+    visualNotify(STATE_MQTT_CONNECTING);
+    int result;
     MQTT::Connect connectObject = MQTT::Connect(clientId);
+    // connectObject.set_auth("test3", "test3");
     // Connect to mqtt broker
-    while(!client.connect(connectObject)) {
+    while(true)
+    {
+        result = client.connect(connectObject);
+        if (result == 1) {
+            break;
+        }
+
+        DEBUG_PRINTLN(result);
         visualNotify(STATE_MQTT_CONNECTING);
         delay(500);
     }
     visualNotify(STATE_MQTT_CONNECTED);
-
-    subscribeMqttTopic();
 }
 
-void subscribeMqttTopic() {
+void subscribeMqttTopic()
+{
+    int result;
+    visualNotify(STATE_MQTT_SUBSCRIBING);
     // Subscibe to the topic
-    while(!client.subscribe(clientId)) {
+    while(true)
+    {
+        result = client.subscribe(clientId);
+        if (result) {
+            break;
+        }
+
+        DEBUG_PRINTLN(result);;
         visualNotify(STATE_MQTT_SUBSCRIBING);
-        delay(500);
+        delay(1000);
     }
     visualNotify(STATE_MQTT_SUBSCRIBED);
+}
+
+
+void connectWifi()
+{
+    WiFi.begin(ssid, pass);
+
+    int retries = 0;
+    while ((WiFi.status() != WL_CONNECTED))
+    {
+        visualNotify(STATE_WIFI_CONNECTING);
+        if(retries > WIFI_MAX_RETRIES)
+        {
+            visualNotify(STATE_RESET);
+            abort();
+        }
+        retries++;
+        delay(WIFI_CONNECT_DELAY_MS);
+    }
+
+    visualNotify(STATE_WIFI_CONNECTED);
+    delay(1000);
+}
+
+void prepareClientIdAndClientTopic()
+{
+    clientId = getClientId();
+
+    clientTopic = (char* )malloc(strlen(clientId) + 10);
+    memcpy(clientTopic, clientId, strlen(clientId));
+    strcpy(clientTopic+strlen(clientId), "/data");
+
+    visualNotify(STATE_GOT_CLIENT_ID);
+}
+
+
+void reconnectWifiIfLinkDown()
+{
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        DEBUG_PRINTLN("WIFI DISCONNECTED!!");
+        connectWifi();
+        connectMqtt();
+        subscribeMqttTopic();
+    }
 }
 
 void setup()
@@ -225,56 +280,37 @@ void setup()
 #ifdef DEBUG_MODE
     // Setup console
     Serial.begin(115200);
-    Serial.println();
-    Serial.println();
+    DEBUG_PRINTLN();
+    DEBUG_PRINTLN();
 #else
     pinMode(LED_PIN, OUTPUT);
 #endif
 
     delay(10);
 
-    WiFi.begin(ssid, pass);
-
-    int retries = 0;
-    while ((WiFi.status() != WL_CONNECTED)) {
-        visualNotify(STATE_WIFI_CONNECTING);
-        if(retries > WIFI_MAX_RETRIES) {
-            visualNotify(STATE_RESET);
-            abort();
-        }
-        retries++;
-        delay(WIFI_CONNECT_DELAY_MS);
-    }
-
-    visualNotify(STATE_WIFI_CONNECTED);
-
-    clientId = getClientId();
-
-    clientTopic = (char* )malloc(strlen(clientId) + 10);
-    memcpy(clientTopic, clientId, strlen(clientId));
-    strcpy(clientTopic+strlen(clientId), "/data");
-
-    visualNotify(STATE_GOT_CLIENT_ID);
-
+    connectWifi();
+    prepareClientIdAndClientTopic();
     connectMqtt();
-
+    subscribeMqttTopic();
 
     // READY
     visualNotify(STATE_READY_TO_GO);
-
 }
 
 
 void loop()
 {
+    reconnectWifiIfLinkDown();
     client.loop();
-    if (client.connected()) {
-
-    }
-
-
-    if (millis() - prevMillisPub > 3000) {
-        prevMillisPub = millis();
+    if (client.connected())
+    {
+        reconnectWifiIfLinkDown();
         fn_publisher();
     }
+    else
+    {
+        connectMqtt();
+        subscribeMqttTopic();
+    }
+
 }
