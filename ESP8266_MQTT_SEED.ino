@@ -195,6 +195,29 @@ void fn_publisher()
     }  
 }
 
+
+void connectMqtt() 
+{
+  MQTT::Connect connectObject = MQTT::Connect(clientId);  
+  // Connect to mqtt broker
+  while(!client.connect(connectObject)) {
+    visualNotify(STATE_MQTT_CONNECTING);
+    delay(500);
+  }  
+  visualNotify(STATE_MQTT_CONNECTED);  
+  
+  subscribeMqttTopic();  
+}
+
+void subscribeMqttTopic() {
+  // Subscibe to the topic
+  while(!client.subscribe(clientId)){
+    visualNotify(STATE_MQTT_SUBSCRIBING);
+    delay(500);
+  }
+  visualNotify(STATE_MQTT_SUBSCRIBED);   
+}
+
 void setup()
 {
   client.set_callback(callback);
@@ -231,37 +254,24 @@ void setup()
   memcpy(clientTopic, clientId, strlen(clientId));
   strcpy(clientTopic+strlen(clientId), "/data");
 
-
   visualNotify(STATE_GOT_CLIENT_ID);
-  MQTT::Connect connectObject = MQTT::Connect(clientId);
-  // connectObject = connectObject.set_auth();
 
-  // Connect to mqtt broker
-  while(!client.connect(connectObject)) {
-    visualNotify(STATE_MQTT_CONNECTING);
-    delay(500);
-  }
-  visualNotify(STATE_MQTT_CONNECTED);
-  
-  // Subscibe to the topic
-  while(!client.subscribe(clientId)){
-    visualNotify(STATE_MQTT_SUBSCRIBING);
-    delay(500);
-  }
+  connectMqtt(); 
 
-  visualNotify(STATE_MQTT_SUBSCRIBED);
 
   // READY
   visualNotify(STATE_READY_TO_GO);
-  
-  // publisher.attach_ms(1000, fn_publisher);
-  
+
 }
 
 
 void loop()
 {
     client.loop();
+    if (client.connected()) {
+      
+    }
+   
 
     if (millis() - prevMillisPub > 3000) {
       prevMillisPub = millis();
