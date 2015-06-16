@@ -3,8 +3,6 @@
 
 // #include <Ticker.h>
 
-
-
 #define WIFI_MAX_RETRIES 150
 #define WIFI_CONNECT_DELAY_MS 1000
 
@@ -38,6 +36,7 @@ PubSubClient *client;
 #define DEBUG_PRINTLN(...) {}
 #endif
 
+unsigned long prevMillisPub = 0;
 
 StaticJsonBuffer<200> jsonBuffer;
 JsonObject& root = jsonBuffer.createObject();
@@ -76,6 +75,16 @@ char* getClientId()
 }
 
 
+void initHardware()
+{
+#ifdef DEBUG_MODE
+    // Setup console
+    Serial.begin(115200);
+    DEBUG_PRINTLN("\n");
+    delay(10);
+#endif
+
+}
 
 void connectWifi()
 {
@@ -170,8 +179,15 @@ void reconnectMqtt()
 }
 
 
-void publishMqttData(const char* clientTopic)
+void publishMqttData(const char* clientTopic, JsonObject &r)
 {
+    if (millis() - prevMillisPub < 3000)
+    {
+        return;
+    }
+
+    prevMillisPub = millis();
+
     static char payload[256];
 
     root.printTo(payload, sizeof(payload));

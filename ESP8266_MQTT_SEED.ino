@@ -20,9 +20,6 @@ const char *pass = "activegateway";
 
 #include "header.h"
 
-unsigned long prevMillisPub = 0;
-
-
 void callback(const MQTT::Publish& pub)
 {
     // MQTT SUBSCRIBE
@@ -42,46 +39,26 @@ void callback(const MQTT::Publish& pub)
     }
 }
 
-
-String preparePublishData()
+void fn_publisher()
 {
+
     static unsigned long counter = 0;
     root["millis"] = millis();
     root["counter"] = ++counter;
     root["nickname"] = DEVICE_NAME;
-}
 
-
-
-void fn_publisher()
-{
-    if (millis() - prevMillisPub < 3000)
-    {
-        return;
-    }
-
-    prevMillisPub = millis();
-    preparePublishData();
-
-    publishMqttData(clientTopic);
+    publishMqttData(clientTopic, root);
 
 }
 
 void setup()
 {
 
-    initPubSubClient();
-
-#ifdef DEBUG_MODE
-    // Setup console
-    Serial.begin(115200);
-    DEBUG_PRINTLN("\n");
-#endif
-
-    delay(10);
+    initHardware();
 
     connectWifi();
 
+    initPubSubClient();
     prepareClientIdAndClientTopic();
     connectMqtt();
     subscribeMqttTopic();
