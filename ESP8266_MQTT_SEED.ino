@@ -42,9 +42,7 @@ void callback(const MQTT::Publish& pub)
 void fn_publisher()
 {
 
-    static unsigned long counter = 0;
     root["millis"] = millis();
-    root["counter"] = ++counter;
     root["nickname"] = DEVICE_NAME;
 
     publishMqttData(clientTopic, root);
@@ -55,10 +53,9 @@ void setup()
 {
 
     initHardware();
-
     connectWifi();
-
     initPubSubClient();
+    client->set_callback(callback);
     prepareClientIdAndClientTopic();
     connectMqtt();
     subscribeMqttTopic();
@@ -79,6 +76,7 @@ void loop()
     }
     else
     {
+        DEBUG_PRINTLN("CLIENT DISCONNECTD");
         reconnectMqtt();
     }
 }

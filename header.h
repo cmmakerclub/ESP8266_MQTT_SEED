@@ -54,6 +54,7 @@ void initPubSubClient()
     client = new PubSubClient("128.199.104.122", 1883);
 }
 
+
 char* getClientId()
 {
     uint8_t mac[6];
@@ -147,7 +148,7 @@ void connectMqtt()
 
         DEBUG_PRINTLN(result);
         DEBUG_PRINTLN(STATE_MQTT_CONNECTING);
-        delay(500);
+        delay(100);
     }
     DEBUG_PRINTLN(STATE_MQTT_CONNECTED);
 }
@@ -170,6 +171,7 @@ void subscribeMqttTopic()
         delay(1000);
     }
     DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBED);
+    DEBUG_PRINTLN(clientId);
 }
 
 void reconnectMqtt()
@@ -181,7 +183,7 @@ void reconnectMqtt()
 
 void publishMqttData(const char* clientTopic, JsonObject &r)
 {
-    if (millis() - prevMillisPub < 3000)
+    if (millis() - prevMillisPub < 1000)
     {
         return;
     }
@@ -189,6 +191,9 @@ void publishMqttData(const char* clientTopic, JsonObject &r)
     prevMillisPub = millis();
 
     static char payload[256];
+
+    static long counter = 0;
+    root["counter"] = ++counter;
 
     root.printTo(payload, sizeof(payload));
 
