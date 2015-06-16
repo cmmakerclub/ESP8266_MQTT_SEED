@@ -1,6 +1,10 @@
 #ifndef MQTT_SEED_HEADER_H
 #define MQTT_SEED_HEADER_H
 
+// #include <Ticker.h>
+
+
+
 #define WIFI_MAX_RETRIES 150
 #define WIFI_CONNECT_DELAY_MS 1000
 
@@ -20,13 +24,9 @@
 #define STATE_RESET              "reset!"
 //-------
 
-
-
-
-
 char* clientId;
 char* clientTopic;
-PubSubClient client;
+PubSubClient *client;
 
 
 #ifdef DEBUG_MODE
@@ -39,11 +39,21 @@ PubSubClient client;
 #endif
 
 
+StaticJsonBuffer<200> jsonBuffer;
+JsonObject& root = jsonBuffer.createObject();
+
 
 void connectMqtt(void);
 char* getClientId(void);
 void connectWifi(void);
 void subscribeMqttTopic(void);
+
+
+
+void initPubSubClient()
+{
+    client = new PubSubClient("128.199.104.122", 1883);
+}
 
 char* getClientId()
 {
@@ -120,7 +130,7 @@ void connectMqtt()
     // Connect to mqtt broker
     while (true)
     {
-        result = client.connect(connectObject);
+        result = client->connect(connectObject);
         if (result == 1)
         {
             break;
@@ -140,7 +150,7 @@ void subscribeMqttTopic()
     // Subscibe to the topic
     while (true)
     {
-        result = client.subscribe(clientId);
+        result = client->subscribe(clientId);
         if (result)
         {
             break;
@@ -151,6 +161,28 @@ void subscribeMqttTopic()
         delay(1000);
     }
     DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBED);
+}
+
+void reconnectMqtt()
+{
+    connectMqtt();
+    subscribeMqttTopic();
+}
+
+
+void publishMqttData(const char* clientTopic)
+{
+    static char payload[256];
+
+    root.printTo(payload, sizeof(payload));
+
+    while(!client->publish(clientTopic, String(payload)))
+    {
+        DEBUG_PRINTLN("PUBLISHED ERROR.");
+        delay(100);
+    }
+
+    DEBUG_PRINTLN("PUBLISHED OK.");
 }
 
 

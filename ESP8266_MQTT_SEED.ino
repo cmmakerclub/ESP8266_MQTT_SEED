@@ -1,6 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-#include <Ticker.h>
+#include <ArduinoJson.h>
 
 
 #define DEBUG_MODE
@@ -20,14 +20,7 @@ const char *pass = "activegateway";
 
 #include "header.h"
 
-Ticker publisher;
-
 unsigned long prevMillisPub = 0;
-
-// IPAddress server(128,199,104,122);
-
-// PubSubClient client("m20.cloudmqtt.com", 17380);
-// PubSubClient client("128.199.104.122", 1883);
 
 
 void callback(const MQTT::Publish& pub)
@@ -50,6 +43,16 @@ void callback(const MQTT::Publish& pub)
 }
 
 
+String preparePublishData()
+{
+    static unsigned long counter = 0;
+    root["millis"] = millis();
+    root["counter"] = ++counter;
+    root["nickname"] = DEVICE_NAME;
+}
+
+
+
 void fn_publisher()
 {
     if (millis() - prevMillisPub < 3000)
@@ -58,32 +61,16 @@ void fn_publisher()
     }
 
     prevMillisPub = millis();
-    static unsigned long counter = 0;
+    preparePublishData();
 
-    String payload = "{\"millis\":";
-    payload += millis();
-    payload += ",\"counter\":";
-    payload += ++counter;
-    payload += ", \"nickname\":";
-    payload += " \"";
-    payload += DEVICE_NAME;
-    payload += "\"";
-    payload += "}";
+    publishMqttData(clientTopic);
 
-
-    if (client.publish(clientTopic, payload))
-    {
-        DEBUG_PRINTLN("PUBLISHED OK.");
-    }
-    else
-    {
-        DEBUG_PRINTLN("PUBLISHED ERROR.");
-    }
 }
 
 void setup()
 {
-    client.set_callback(callback);
+
+    initPubSubClient();
 
 #ifdef DEBUG_MODE
     // Setup console
@@ -94,6 +81,7 @@ void setup()
     delay(10);
 
     connectWifi();
+
     prepareClientIdAndClientTopic();
     connectMqtt();
     subscribeMqttTopic();
@@ -106,16 +94,14 @@ void setup()
 void loop()
 {
     reconnectWifiIfLinkDown();
-    client.loop();
-    if (client.connected())
+
+    client->loop();
+    if (client->connected())
     {
-        reconnectWifiIfLinkDown();
         fn_publisher();
     }
     else
     {
-        connectMqtt();
-        subscribeMqttTopic();
+        reconnectMqtt();
     }
-
 }
