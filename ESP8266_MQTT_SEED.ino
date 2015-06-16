@@ -26,19 +26,19 @@
 #define DEVICE_NAME "NAT"
 
 
-#define STATE_WIFI_CONNECTING    0
-#define STATE_WIFI_CONNECTED     1
+#define STATE_WIFI_CONNECTING   "WiFi connecting..."
+#define STATE_WIFI_CONNECTED    "WiFi connected"
 
-#define STATE_MQTT_CONNECTING    2
-#define STATE_MQTT_CONNECTED     3
-#define STATE_MQTT_SUBSCRIBING   4
-#define STATE_MQTT_SUBSCRIBED    5
+#define STATE_MQTT_CONNECTING    "MQTT connecting..."
+#define STATE_MQTT_CONNECTED     "MQTT connected!"
+#define STATE_MQTT_SUBSCRIBING   "MQTT subscribing..."
+#define STATE_MQTT_SUBSCRIBED    "MQTT subscribed!"
 
-#define STATE_READY_TO_GO        6
+#define STATE_READY_TO_GO        "Ready!"
 
 //-------
-#define STATE_GOT_CLIENT_ID      7
-#define STATE_RESET              8
+#define STATE_GOT_CLIENT_ID      "client id prepared"
+#define STATE_RESET              "reset!"
 //-------
 
 #define LED_PIN 1 // <<<==== 1 = TX0 PIN 
@@ -108,54 +108,6 @@ void blink_ms(uint8_t millisecs)
 }
 #endif
 
-void visualNotify(uint8_t state)
-{
-    if (state == STATE_WIFI_CONNECTING)
-    {
-        DEBUG_PRINT(WiFi.status());
-        DEBUG_PRINT(" ");
-    }
-    else if (state == STATE_WIFI_CONNECTED)
-    {
-        DEBUG_PRINT("\nWifi connected.");
-    }
-    else if (state == STATE_GOT_CLIENT_ID)
-    {
-        DEBUG_PRINTLN(clientId);
-    }
-    else if (state == STATE_MQTT_CONNECTING)
-    {
-        DEBUG_PRINTLN("\nMQTT connecting...");
-    }
-    else if (state == STATE_MQTT_CONNECTED)
-    {
-        DEBUG_PRINTLN("\nMQTT Connected.");
-    }
-    else if (state == STATE_MQTT_SUBSCRIBING)
-    {
-        DEBUG_PRINT("Subscibing... to " );
-        DEBUG_PRINTLN(clientId);
-    }
-    else if (state == STATE_MQTT_SUBSCRIBED)
-    {
-        DEBUG_PRINT("Subscribed... to ");
-        DEBUG_PRINTLN(clientTopic);
-    }
-    else if (state == STATE_READY_TO_GO)
-    {
-        DEBUG_PRINTLN("READY TO GO");
-    }
-    else if (state == STATE_RESET)
-    {
-        DEBUG_PRINTLN("\nReset due to WIFI_MAX_RETRIES");
-    }
-    else
-    {
-        // UN-HANDLED
-        // SHOULD NOT REACHED
-    }
-}
-
 void fn_publisher()
 {
     if (millis() - prevMillisPub < 3000)
@@ -190,7 +142,7 @@ void fn_publisher()
 
 void connectMqtt()
 {
-    visualNotify(STATE_MQTT_CONNECTING);
+    DEBUG_PRINTLN(STATE_MQTT_CONNECTING);
     int result;
     MQTT::Connect connectObject = MQTT::Connect(clientId);
     // connectObject.set_auth("test3", "test3");
@@ -198,34 +150,36 @@ void connectMqtt()
     while(true)
     {
         result = client.connect(connectObject);
-        if (result == 1) {
+        if (result == 1)
+        {
             break;
         }
 
         DEBUG_PRINTLN(result);
-        visualNotify(STATE_MQTT_CONNECTING);
+        DEBUG_PRINTLN(STATE_MQTT_CONNECTING);
         delay(500);
     }
-    visualNotify(STATE_MQTT_CONNECTED);
+    DEBUG_PRINTLN(STATE_MQTT_CONNECTED);
 }
 
 void subscribeMqttTopic()
 {
     int result;
-    visualNotify(STATE_MQTT_SUBSCRIBING);
+    DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
     // Subscibe to the topic
     while(true)
     {
         result = client.subscribe(clientId);
-        if (result) {
+        if (result)
+        {
             break;
         }
 
         DEBUG_PRINTLN(result);;
-        visualNotify(STATE_MQTT_SUBSCRIBING);
+        DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
         delay(1000);
     }
-    visualNotify(STATE_MQTT_SUBSCRIBED);
+    DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBED);
 }
 
 
@@ -236,17 +190,17 @@ void connectWifi()
     int retries = 0;
     while ((WiFi.status() != WL_CONNECTED))
     {
-        visualNotify(STATE_WIFI_CONNECTING);
+        DEBUG_PRINTLN(STATE_WIFI_CONNECTING);
         if(retries > WIFI_MAX_RETRIES)
         {
-            visualNotify(STATE_RESET);
+            DEBUG_PRINTLN(STATE_RESET);
             abort();
         }
         retries++;
         delay(WIFI_CONNECT_DELAY_MS);
     }
 
-    visualNotify(STATE_WIFI_CONNECTED);
+    DEBUG_PRINTLN(STATE_WIFI_CONNECTED);
     delay(1000);
 }
 
@@ -258,7 +212,7 @@ void prepareClientIdAndClientTopic()
     memcpy(clientTopic, clientId, strlen(clientId));
     strcpy(clientTopic+strlen(clientId), "/data");
 
-    visualNotify(STATE_GOT_CLIENT_ID);
+    DEBUG_PRINTLN(STATE_GOT_CLIENT_ID);
 }
 
 
@@ -283,8 +237,6 @@ void setup()
     DEBUG_PRINTLN();
     DEBUG_PRINTLN();
 #else
-    pinMode(LED_PIN, OUTPUT);
-#endif
 
     delay(10);
 
@@ -294,7 +246,7 @@ void setup()
     subscribeMqttTopic();
 
     // READY
-    visualNotify(STATE_READY_TO_GO);
+    DEBUG_PRINTLN(STATE_READY_TO_GO);
 }
 
 
