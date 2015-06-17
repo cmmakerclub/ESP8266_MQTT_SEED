@@ -54,203 +54,203 @@ void subscribeMqttTopic(void);
 
 void initPubSubClient()
 {
-    client = new PubSubClient(MQTT_HOST, MQTT_PORT);
+  client = new PubSubClient(MQTT_HOST, MQTT_PORT);
 }
 
 
 char* getClientId()
 {
-    uint8_t mac[6];
-    WiFi.macAddress(mac);
-    String result;
-    for (int i = 0; i < 6; ++i)
-    {
-        result += String(mac[i], 16);
-        if (i < 5)
-            result += ':';
-    }
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  String result;
+  for (int i = 0; i < 6; ++i)
+  {
+    result += String(mac[i], 16);
+    if (i < 5)
+      result += ':';
+  }
 
-    uint8_t len = strlen(CLIENT_ID_PREFIX);
-    char* buff = (char* )malloc(len + result.length() + 1);
-    memcpy(buff, CLIENT_ID_PREFIX, len);
-    strcpy(buff + len, (char*)result.c_str());
+  uint8_t len = strlen(CLIENT_ID_PREFIX);
+  char* buff = (char* )malloc(len + result.length() + 1);
+  memcpy(buff, CLIENT_ID_PREFIX, len);
+  strcpy(buff + len, (char*)result.c_str());
 
-    return buff;
+  return buff;
 }
 
 
 void initHardware()
 {
 #ifdef DEBUG_MODE
-    // Setup console
-    Serial.begin(115200);
-    DEBUG_PRINTLN("\n");
-    delay(10);
+  // Setup console
+  Serial.begin(115200);
+  DEBUG_PRINTLN("\n");
+  delay(10);
 #endif
 
 }
 
 void connectWifi()
 {
-    WiFi.begin(ssid, pass);
+  WiFi.begin(ssid, pass);
 
-    int retries = 0;
-    while ((WiFi.status() != WL_CONNECTED))
+  int retries = 0;
+  while ((WiFi.status() != WL_CONNECTED))
+  {
+    DEBUG_PRINTLN(STATE_WIFI_CONNECTING);
+    if (retries > WIFI_MAX_RETRIES)
     {
-        DEBUG_PRINTLN(STATE_WIFI_CONNECTING);
-        if(retries > WIFI_MAX_RETRIES)
-        {
-            DEBUG_PRINTLN(STATE_RESET);
-            abort();
-        }
-        retries++;
-        delay(WIFI_CONNECT_DELAY_MS);
-        yield();
+      DEBUG_PRINTLN(STATE_RESET);
+      abort();
     }
+    retries++;
+    delay(WIFI_CONNECT_DELAY_MS);
+    yield();
+  }
 
-    DEBUG_PRINTLN(STATE_WIFI_CONNECTED);
+  DEBUG_PRINTLN(STATE_WIFI_CONNECTED);
 }
 
 char* getDefaultTopic()
 {
-    clientId = getClientId();
-    clientTopic = (char* )malloc(strlen(clientId) + 6);
-    memcpy(clientTopic, clientId, strlen(clientId));
-    strcpy(clientTopic+strlen(clientId), "/data");
-    return clientTopic;
+  clientId = getClientId();
+  clientTopic = (char* )malloc(strlen(clientId) + 6);
+  memcpy(clientTopic, clientId, strlen(clientId));
+  strcpy(clientTopic + strlen(clientId), "/data");
+  return clientTopic;
 }
 
 void prepareClientIdAndClientTopic()
 {
-    clientId = getClientId();
-    clientTopic = getDefaultTopic();
+  clientId = getClientId();
+  clientTopic = getDefaultTopic();
 
-    DEBUG_PRINTLN(STATE_GOT_CLIENT_ID);
+  DEBUG_PRINTLN(STATE_GOT_CLIENT_ID);
 }
 
 
 void reconnectWifiIfLinkDown()
 {
-    if (WiFi.status() != WL_CONNECTED)
-    {
-        DEBUG_PRINTLN("WIFI DISCONNECTED!!");
-        connectWifi();
-        connectMqtt();
-        subscribeMqttTopic();
-    }
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    DEBUG_PRINTLN("WIFI DISCONNECTED!!");
+    connectWifi();
+    connectMqtt();
+    subscribeMqttTopic();
+  }
 }
 
 void connectMqtt()
 {
-    uint16_t retries = 0;
-    prepareClientIdAndClientTopic();
+  uint16_t retries = 0;
+  prepareClientIdAndClientTopic();
 
-    connOpts = new MQTT::Connect(clientId);
-    connOpts->set_auth(MQTT_USER, MQTT_PASS);
-    connOpts->set_keepalive(30);
+  connOpts = new MQTT::Connect(clientId);
+  connOpts->set_auth(MQTT_USER, MQTT_PASS);
+  connOpts->set_keepalive(30);
 
-    int result;
-    // Connect to mqtt broker
-    unsigned long  start_millis = millis();
-    while (true)
+  int result;
+  // Connect to mqtt broker
+  unsigned long  start_millis = millis();
+  while (true)
+  {
+    DEBUG_PRINT(STATE_MQTT_CONNECTING);
+    DEBUG_PRINT(" [");
+    DEBUG_PRINT(clientId);
+    DEBUG_PRINT(", ");
+    DEBUG_PRINT(clientTopic);
+    DEBUG_PRINTLN("]");
+
+
+    yield();
+    result = client->connect(*connOpts);
+    if (result == 1)
     {
-        DEBUG_PRINT(STATE_MQTT_CONNECTING);
-        DEBUG_PRINT(" [");
-        DEBUG_PRINT(clientId);
-        DEBUG_PRINT(", ");
-        DEBUG_PRINT(clientTopic);
-        DEBUG_PRINTLN(" ]");
-
-
-        yield();
-        result = client->connect(*connOpts);
-        if (result == 1)
-        {
-            break;
-        }
-
-
-        if (WiFi.status() != WL_CONNECTED)
-        {
-            DEBUG_PRINT("WIFI IS NOT CONNECTED BREAK! ");
-            DEBUG_PRINTLN(WiFi.status());
-            break;
-        }
-
-
-        DEBUG_PRINT(retries++);
-        DEBUG_PRINT(" - TIME TAKE: ");
-        DEBUG_PRINTLN(millis() - start_millis);
-
-        delay(100);
-
-        if (millis() - start_millis > 20 *1000)
-        {
-            abort();
-        }
-
+      break;
     }
-    DEBUG_PRINTLN(STATE_MQTT_CONNECTED);
+
+
+    if (WiFi.status() != WL_CONNECTED)
+    {
+      DEBUG_PRINT("WIFI IS NOT CONNECTED BREAK! ");
+      DEBUG_PRINTLN(WiFi.status());
+      break;
+    }
+
+
+    DEBUG_PRINT(retries++);
+    DEBUG_PRINT(" - TIME TAKE: ");
+    DEBUG_PRINTLN(millis() - start_millis);
+
+    delay(100);
+
+    if (millis() - start_millis > 20 * 1000)
+    {
+      abort();
+    }
+
+  }
+  DEBUG_PRINTLN(STATE_MQTT_CONNECTED);
 }
 
 void subscribeMqttTopic()
 {
-    int result;
-    DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
-    // Subscibe to the topic
-    while (true)
+  int result;
+  DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
+  // Subscibe to the topic
+  while (true)
+  {
+    result = client->subscribe(clientId);
+    if (result)
     {
-        result = client->subscribe(clientId);
-        if (result)
-        {
-            break;
-        }
-
-        DEBUG_PRINTLN(result);;
-        DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
-        yield();
+      break;
     }
-    DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBED);
-    DEBUG_PRINTLN(clientId);
+
+    DEBUG_PRINTLN(result);;
+    DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
+    yield();
+  }
+  DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBED);
+  DEBUG_PRINTLN(clientId);
 }
 
 void reconnectMqtt()
 {
-    connectMqtt();
-    if (WiFi.status() != WL_CONNECTED)
-    {
-        DEBUG_PRINTLN("DO NOT SUBSCRIBE... WIFI DISCONNECTED!!");
-    }
-    else
-    {
-        subscribeMqttTopic();
-    }
+  connectMqtt();
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    DEBUG_PRINTLN("DO NOT SUBSCRIBE... WIFI DISCONNECTED!!");
+  }
+  else
+  {
+    subscribeMqttTopic();
+  }
 }
 
 
 void publishMqttData(const char* clientTopic, JsonObject &r)
 {
-    if (millis() - prevMillisPub < DELAY_PUBLISH)
-    {
-        return;
-    }
+  if (millis() - prevMillisPub < DELAY_PUBLISH)
+  {
+    return;
+  }
 
-    prevMillisPub = millis();
+  prevMillisPub = millis();
 
-    static char payload[256];
+  static char payload[256];
 
-    static long counter = 0;
-    root["counter"] = ++counter;
+  static long counter = 0;
+  root["counter"] = ++counter;
 
-    root.printTo(payload, sizeof(payload));
+  root.printTo(payload, sizeof(payload));
 
-    while(!client->publish(clientTopic, String(payload)))
-    {
-        DEBUG_PRINTLN("PUBLISHED ERROR.");
-        yield();
-    }
+  while (!client->publish(clientTopic, String(payload)))
+  {
+    DEBUG_PRINTLN("PUBLISHED ERROR.");
+    yield();
+  }
 
-    DEBUG_PRINTLN("PUBLISHED OK.");
+  DEBUG_PRINTLN("PUBLISHED OK.");
 }
 
 
