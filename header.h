@@ -111,7 +111,8 @@ void connectWifi()
     DEBUG_PRINTLN(STATE_WIFI_CONNECTED);
 }
 
-char* getDefaultTopic() {
+char* getDefaultTopic()
+{
     clientId = getClientId();
     clientTopic = (char* )malloc(strlen(clientId) + 6);
     memcpy(clientTopic, clientId, strlen(clientId));
@@ -141,7 +142,7 @@ void reconnectWifiIfLinkDown()
 
 void connectMqtt()
 {
-    uint8_t retries = 0;
+    uint16_t retries = 0;
     prepareClientIdAndClientTopic();
 
     connOpts = new MQTT::Connect(clientId);
@@ -150,6 +151,7 @@ void connectMqtt()
 
     int result;
     // Connect to mqtt broker
+    unsigned long  start_millis = millis();
     while (true)
     {
         DEBUG_PRINT(STATE_MQTT_CONNECTING);
@@ -158,6 +160,8 @@ void connectMqtt()
         DEBUG_PRINT(", ");
         DEBUG_PRINT(clientTopic);
         DEBUG_PRINTLN(" ]");
+
+
         yield();
         result = client->connect(*connOpts);
         if (result == 1)
@@ -166,13 +170,25 @@ void connectMqtt()
         }
 
 
+        if (WiFi.status() != WL_CONNECTED)
+        {
+            DEBUG_PRINT("WIFI IS NOT CONNECTED BREAK! ");
+            DEBUG_PRINTLN(WiFi.status());
+            break;
+        }
+
+
         DEBUG_PRINT(retries++);
-        DEBUG_PRINT(" ");
-        if (retries == 30) {
+        DEBUG_PRINT(" - TIME TAKE: ");
+        DEBUG_PRINTLN(millis() - start_millis);
+
+        delay(100);
+
+        if (millis() - start_millis > 20 *1000)
+        {
             abort();
         }
 
-        delay(200);
     }
     DEBUG_PRINTLN(STATE_MQTT_CONNECTED);
 }
@@ -201,7 +217,14 @@ void subscribeMqttTopic()
 void reconnectMqtt()
 {
     connectMqtt();
-    subscribeMqttTopic();
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        DEBUG_PRINTLN("DO NOT SUBSCRIBE... WIFI DISCONNECTED!!");
+    }
+    else
+    {
+        subscribeMqttTopic();
+    }
 }
 
 
@@ -224,7 +247,7 @@ void publishMqttData(const char* clientTopic, JsonObject &r)
     while(!client->publish(clientTopic, String(payload)))
     {
         DEBUG_PRINTLN("PUBLISHED ERROR.");
-        yield();        
+        yield();
     }
 
     DEBUG_PRINTLN("PUBLISHED OK.");

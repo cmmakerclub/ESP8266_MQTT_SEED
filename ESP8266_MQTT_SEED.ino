@@ -11,20 +11,19 @@
 #define CLIENT_ID_PREFIX "esp8266-"
 #define DEVICE_NAME "OPENDREAM-ESP"
 
-// const char *ssid = "Opendream Play";
-// const char *pass = "5k,skrijv',7'sik";
 
-const char *ssid = "Opendream";
-const char *pass = "gfkgvkgv'2015!!!!";
-
-#define MQTT_HOST "128.199.104.122"
-// #define MQTT_HOST "m20.cloudmqtt.com"
+#define MQTT_HOST "m20.cloudmqtt.com"
 #define MQTT_PORT 1883
 
-#define MQTT_USER "" 
+#define MQTT_USER ""
 #define MQTT_PASS ""
 
 #define DELAY_PUBLISH 3000
+
+// typedef struct {
+//     PubSubClient *client;
+//     MQTT::Connect *connOpts;
+// } config_t;
 
 #include "header.h"
 
@@ -64,11 +63,7 @@ void setup()
     initHardware();
     connectWifi();
     initPubSubClient();
-
     client->set_callback(callback);
-
-
-
     connectMqtt();
     subscribeMqttTopic();
 
@@ -81,7 +76,7 @@ void loop()
 {
     reconnectWifiIfLinkDown();
 
-    
+
     if (client->loop())
     {
         fn_publisher();
