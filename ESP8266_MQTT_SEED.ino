@@ -9,14 +9,16 @@
 #define DEBUG_PRINTER Serial
 
 #define CLIENT_ID_PREFIX "esp8266-"
-#define DEVICE_NAME "NAT"
+#define DEVICE_NAME "OPENDREAM-ESP"
 
+// const char *ssid = "Opendream Play";
+// const char *pass = "5k,skrijv',7'sik";
 
-#define LED_PIN 1 // <<<==== 1 = TX0 PIN 
+const char *ssid = "Opendream";
+const char *pass = "gfkgvkgv'2015!!!!";
 
-const char *ssid = "OpenWrt_NAT_500GP.101";
-const char *pass = "activegateway";
-#define MQTT_HOST "m20.cloudmqtt.com"
+#define MQTT_HOST "128.199.104.122"
+// #define MQTT_HOST "m20.cloudmqtt.com"
 #define MQTT_PORT 1883
 
 #define MQTT_USER "" 
@@ -64,6 +66,8 @@ void setup()
     initPubSubClient();
 
     client->set_callback(callback);
+
+
 
     connectMqtt();
     subscribeMqttTopic();

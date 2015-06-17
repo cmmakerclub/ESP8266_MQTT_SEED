@@ -141,26 +141,38 @@ void reconnectWifiIfLinkDown()
 
 void connectMqtt()
 {
+    uint8_t retries = 0;
     prepareClientIdAndClientTopic();
 
     connOpts = new MQTT::Connect(clientId);
     connOpts->set_auth(MQTT_USER, MQTT_PASS);
+    connOpts->set_keepalive(30);
 
-    DEBUG_PRINTLN(STATE_MQTT_CONNECTING);
     int result;
     // Connect to mqtt broker
     while (true)
     {
-        result = client->connect(*connOpts);
+        DEBUG_PRINT(STATE_MQTT_CONNECTING);
+        DEBUG_PRINT(" [");
+        DEBUG_PRINT(clientId);
+        DEBUG_PRINT(", ");
+        DEBUG_PRINT(clientTopic);
+        DEBUG_PRINTLN(" ]");
         yield();
+        result = client->connect(*connOpts);
         if (result == 1)
         {
             break;
         }
 
-        DEBUG_PRINT(result);
-        DEBUG_PRINTLN(STATE_MQTT_CONNECTING);
-        yield();
+
+        DEBUG_PRINT(retries++);
+        DEBUG_PRINT(" ");
+        if (retries == 30) {
+            abort();
+        }
+
+        delay(200);
     }
     DEBUG_PRINTLN(STATE_MQTT_CONNECTED);
 }
