@@ -16,7 +16,13 @@
 
 const char *ssid = "OpenWrt_NAT_500GP.101";
 const char *pass = "activegateway";
+#define MQTT_HOST "m20.cloudmqtt.com"
+#define MQTT_PORT 1883
 
+#define MQTT_USER "" 
+#define MQTT_PASS ""
+
+#define DELAY_PUBLISH 3000
 
 #include "header.h"
 
@@ -43,6 +49,7 @@ void fn_publisher()
 {
 
     root["millis"] = millis();
+    root["micros"] = micros();
     root["nickname"] = DEVICE_NAME;
 
     publishMqttData(clientTopic, root);
@@ -55,8 +62,9 @@ void setup()
     initHardware();
     connectWifi();
     initPubSubClient();
+
     client->set_callback(callback);
-    prepareClientIdAndClientTopic();
+
     connectMqtt();
     subscribeMqttTopic();
 
@@ -69,8 +77,8 @@ void loop()
 {
     reconnectWifiIfLinkDown();
 
-    client->loop();
-    if (client->connected())
+    
+    if (client->loop())
     {
         fn_publisher();
     }

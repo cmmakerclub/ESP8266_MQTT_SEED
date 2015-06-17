@@ -3,8 +3,8 @@
 
 // #include <Ticker.h>
 
-#define WIFI_MAX_RETRIES 150
-#define WIFI_CONNECT_DELAY_MS 1000
+#define WIFI_MAX_RETRIES 1500
+#define WIFI_CONNECT_DELAY_MS 20
 
 
 #define STATE_WIFI_CONNECTING   "WiFi connecting..."
@@ -21,6 +21,8 @@
 #define STATE_GOT_CLIENT_ID      "client id prepared"
 #define STATE_RESET              "reset!"
 //-------
+
+#define LED_PIN 1 // <<<==== 1 = TX0 PIN 
 
 char* clientId;
 char* clientTopic;
@@ -41,6 +43,7 @@ unsigned long prevMillisPub = 0;
 StaticJsonBuffer<200> jsonBuffer;
 JsonObject& root = jsonBuffer.createObject();
 
+MQTT::Connect *connOpts;
 
 void connectMqtt(void);
 char* getClientId(void);
@@ -51,7 +54,7 @@ void subscribeMqttTopic(void);
 
 void initPubSubClient()
 {
-    client = new PubSubClient("128.199.104.122", 1883);
+    client = new PubSubClient(MQTT_HOST, MQTT_PORT);
 }
 
 
@@ -102,19 +105,24 @@ void connectWifi()
         }
         retries++;
         delay(WIFI_CONNECT_DELAY_MS);
+        yield();
     }
 
     DEBUG_PRINTLN(STATE_WIFI_CONNECTED);
-    delay(1000);
+}
+
+char* getDefaultTopic() {
+    clientId = getClientId();
+    clientTopic = (char* )malloc(strlen(clientId) + 6);
+    memcpy(clientTopic, clientId, strlen(clientId));
+    strcpy(clientTopic+strlen(clientId), "/data");
+    return clientTopic;
 }
 
 void prepareClientIdAndClientTopic()
 {
     clientId = getClientId();
-
-    clientTopic = (char* )malloc(strlen(clientId) + 10);
-    memcpy(clientTopic, clientId, strlen(clientId));
-    strcpy(clientTopic+strlen(clientId), "/data");
+    clientTopic = getDefaultTopic();
 
     DEBUG_PRINTLN(STATE_GOT_CLIENT_ID);
 }
@@ -133,22 +141,26 @@ void reconnectWifiIfLinkDown()
 
 void connectMqtt()
 {
+    prepareClientIdAndClientTopic();
+
+    connOpts = new MQTT::Connect(clientId);
+    connOpts->set_auth(MQTT_USER, MQTT_PASS);
+
     DEBUG_PRINTLN(STATE_MQTT_CONNECTING);
     int result;
-    MQTT::Connect connectObject = MQTT::Connect(clientId);
-    // connectObject.set_auth("test3", "test3");
     // Connect to mqtt broker
     while (true)
     {
-        result = client->connect(connectObject);
+        result = client->connect(*connOpts);
+        yield();
         if (result == 1)
         {
             break;
         }
 
-        DEBUG_PRINTLN(result);
+        DEBUG_PRINT(result);
         DEBUG_PRINTLN(STATE_MQTT_CONNECTING);
-        delay(100);
+        yield();
     }
     DEBUG_PRINTLN(STATE_MQTT_CONNECTED);
 }
@@ -168,7 +180,7 @@ void subscribeMqttTopic()
 
         DEBUG_PRINTLN(result);;
         DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
-        delay(1000);
+        yield();
     }
     DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBED);
     DEBUG_PRINTLN(clientId);
@@ -183,7 +195,7 @@ void reconnectMqtt()
 
 void publishMqttData(const char* clientTopic, JsonObject &r)
 {
-    if (millis() - prevMillisPub < 1000)
+    if (millis() - prevMillisPub < DELAY_PUBLISH)
     {
         return;
     }
@@ -200,7 +212,7 @@ void publishMqttData(const char* clientTopic, JsonObject &r)
     while(!client->publish(clientTopic, String(payload)))
     {
         DEBUG_PRINTLN("PUBLISHED ERROR.");
-        delay(100);
+        yield();        
     }
 
     DEBUG_PRINTLN("PUBLISHED OK.");
