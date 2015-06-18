@@ -9,10 +9,16 @@
 #define DEBUG_PRINTER Serial
 
 #define CLIENT_ID_PREFIX "esp8266-"
-#define DEVICE_NAME "CMMC-CLOUD-CMMC"
+#define DEVICE_NAME "NEW-GEN"
+//
+//const char *ssid = "OpenWrt_NAT_500GP.101";
+//const char *pass = "activegateway";
+//
+//const char* ssid     = "OpenWrt_NAT_11_HOME";
+//const char* pass = "homenetwork";
 
-const char *ssid = "OpenWrt_NAT_500GP.101";
-const char *pass = "activegateway";
+const char* ssid = "Opendream Play";
+const char* pass = "5k,skrijv',7'sik";
 
 
 #define MQTT_HOST "128.199.104.122"
@@ -30,7 +36,8 @@ const char *pass = "activegateway";
 // } config_t;
 
 #include "header.h"
-
+ 
+long last_free_heap = 0;
 void callback(const MQTT::Publish& pub)
 {
   // MQTT SUBSCRIBE
@@ -48,17 +55,22 @@ void callback(const MQTT::Publish& pub)
     DEBUG_PRINT(" => ");
     DEBUG_PRINTLN(pub.payload_string());
   }
-#define dfsdfsdf
+
+
 }
 
 void fn_publisher()
 {
-
-  root["millis"] = millis();
-  root["micros"] = micros();
+  root["secs"] = millis()/1000;
+//  root["micros"] = micros();
+//  root["cycle_count"] = ESP.getCycleCount();
+//  root["chip_id"] = ESP.getChipId();
+  root["free_heap"] = ESP.getFreeHeap();
   root["nickname"] = DEVICE_NAME;
 
+  
   publishMqttData(clientTopic, root);
+
 
 }
 
@@ -89,6 +101,9 @@ void loop()
   else
   {
     DEBUG_PRINTLN("CLIENT DISCONNECTD");
+    last_free_heap = ESP.getFreeHeap();
     reconnectMqtt();
+    DEBUG_PRINT("DIFF HEAP = ");
+    DEBUG_PRINTLN(last_free_heap - ESP.getFreeHeap());     
   }
 }

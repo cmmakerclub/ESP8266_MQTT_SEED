@@ -24,8 +24,10 @@
 
 #define LED_PIN 1 // <<<==== 1 = TX0 PIN 
 
-char* clientId;
-char* clientTopic;
+static boolean MQTT_CONNECTED_FLAG = 0;
+
+char* clientId = NULL;
+char* clientTopic = NULL;
 PubSubClient *client;
 
 
@@ -39,11 +41,12 @@ PubSubClient *client;
 #endif
 
 unsigned long prevMillisPub = 0;
+#define PAYLOAD_SIZE 800
 
-StaticJsonBuffer<200> jsonBuffer;
+static StaticJsonBuffer<PAYLOAD_SIZE> jsonBuffer;
 JsonObject& root = jsonBuffer.createObject();
 
-MQTT::Connect *connOpts;
+MQTT::Connect *connOpts = NULL;
 
 void connectMqtt(void);
 char* getClientId(void);
@@ -54,6 +57,11 @@ void subscribeMqttTopic(void);
 
 void initPubSubClient()
 {
+  if ( client != NULL) {
+    delete client;
+    client = NULL;
+    DEBUG_PRINT("DELETING  ... client - ");
+  }
   client = new PubSubClient(MQTT_HOST, MQTT_PORT);
 }
 
@@ -70,10 +78,20 @@ char* getClientId()
       result += ':';
   }
 
+  if (clientId != NULL) {
+    DEBUG_PRINT("__DELETING  ... clientId - ");
+    DEBUG_PRINTLN(clientId);
+    free(clientId);
+    clientId = NULL;
+  }
+
   uint8_t len = strlen(CLIENT_ID_PREFIX);
   char* buff = (char* )malloc(len + result.length() + 1);
   memcpy(buff, CLIENT_ID_PREFIX, len);
   strcpy(buff + len, (char*)result.c_str());
+
+  DEBUG_PRINT("BUFF LEN: ");
+  DEBUG_PRINTLN(sizeof(buff));
 
   return buff;
 }
@@ -101,7 +119,7 @@ void connectWifi()
     if (retries > WIFI_MAX_RETRIES)
     {
       DEBUG_PRINTLN(STATE_RESET);
-      abort();
+      break;
     }
     retries++;
     delay(WIFI_CONNECT_DELAY_MS);
@@ -114,14 +132,36 @@ void connectWifi()
 char* getDefaultTopic()
 {
   clientId = getClientId();
+
+  if (clientTopic != NULL) {
+    DEBUG_PRINT("___DELETING ... clientTopic - ");
+    DEBUG_PRINTLN(clientTopic);
+    free(clientTopic);
+    clientTopic = NULL;
+  }
+
   clientTopic = (char* )malloc(strlen(clientId) + 6);
   memcpy(clientTopic, clientId, strlen(clientId));
   strcpy(clientTopic + strlen(clientId), "/data");
+  DEBUG_PRINT("_clientTopic_SIZE: ");
+  DEBUG_PRINTLN(strlen(clientTopic));
+
   return clientTopic;
 }
 
 void prepareClientIdAndClientTopic()
 {
+
+  if (clientId != NULL) {
+    free(clientId);
+    clientId = NULL;
+  }
+
+  if (clientTopic != NULL) {
+    free(clientTopic);
+    clientTopic = NULL;
+  }
+
   clientId = getClientId();
   clientTopic = getDefaultTopic();
 
@@ -145,9 +185,15 @@ void connectMqtt()
   uint16_t retries = 0;
   prepareClientIdAndClientTopic();
 
+  if (connOpts != NULL) {
+    DEBUG_PRINTLN("___Deleting connOpts...");
+    delete(connOpts);
+    connOpts = NULL;
+  }
+
   connOpts = new MQTT::Connect(clientId);
   connOpts->set_auth(MQTT_USER, MQTT_PASS);
-  connOpts->set_keepalive(30);
+  connOpts->set_keepalive(5);
 
   int result;
   // Connect to mqtt broker
@@ -164,6 +210,7 @@ void connectMqtt()
 
     yield();
     result = client->connect(*connOpts);
+    MQTT_CONNECTED_FLAG = result;
     if (result == 1)
     {
       break;
@@ -174,7 +221,7 @@ void connectMqtt()
     {
       DEBUG_PRINT("WIFI IS NOT CONNECTED BREAK! ");
       DEBUG_PRINTLN(WiFi.status());
-      break;
+      return;
     }
 
 
@@ -186,7 +233,10 @@ void connectMqtt()
 
     if (millis() - start_millis > 20 * 1000)
     {
-      abort();
+      initPubSubClient();
+      WiFi.disconnect();
+      delay(100);
+      return;
     }
 
   }
@@ -195,7 +245,13 @@ void connectMqtt()
 
 void subscribeMqttTopic()
 {
+  return;
   int result;
+  if (!MQTT_CONNECTED_FLAG)
+  {
+    return;
+  }
+
   DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
   // Subscibe to the topic
   while (true)
@@ -230,6 +286,12 @@ void reconnectMqtt()
 
 void publishMqttData(const char* clientTopic, JsonObject &r)
 {
+
+  if (!MQTT_CONNECTED_FLAG)
+  {
+    return;
+  }
+
   if (millis() - prevMillisPub < DELAY_PUBLISH)
   {
     return;
@@ -237,19 +299,25 @@ void publishMqttData(const char* clientTopic, JsonObject &r)
 
   prevMillisPub = millis();
 
-  static char payload[256];
+  static char payload[PAYLOAD_SIZE];
 
   static long counter = 0;
   root["counter"] = ++counter;
 
   root.printTo(payload, sizeof(payload));
+  DEBUG_PRINT("PAYLOAD LEN: ");
+  DEBUG_PRINT(strlen(payload));
+  DEBUG_PRINT(" SIZE: ");
+  DEBUG_PRINT(sizeof(payload));
 
-  while (!client->publish(clientTopic, String(payload)))
+  while (!client->publish(clientTopic, payload))
   {
     DEBUG_PRINTLN("PUBLISHED ERROR.");
     yield();
   }
-
+  DEBUG_PRINTLN("");
+  DEBUG_PRINT(counter);
+  DEBUG_PRINT(" - ");
   DEBUG_PRINTLN("PUBLISHED OK.");
 }
 
