@@ -28,7 +28,7 @@ const char* pass = "5k,skrijv',7'sik";
 #define MQTT_USER ""
 #define MQTT_PASS ""
 
-#define DELAY_PUBLISH 3000
+#define DELAY_PUBLISH 1000
 
 // typedef struct {
 //     PubSubClient *client;
@@ -37,7 +37,7 @@ const char* pass = "5k,skrijv',7'sik";
 
 #include "header.h"
  
-long last_free_heap = 0;
+
 void callback(const MQTT::Publish& pub)
 {
   // MQTT SUBSCRIBE
@@ -59,6 +59,10 @@ void callback(const MQTT::Publish& pub)
 
 }
 
+
+
+
+
 void fn_publisher()
 {
   root["secs"] = millis()/1000;
@@ -76,11 +80,12 @@ void fn_publisher()
 
 void setup()
 {
-
   initHardware();
   connectWifi();
   initPubSubClient();
   client->set_callback(callback);
+  prepareClientIdAndClientTopic();
+  initConnOpts();
   connectMqtt();
   subscribeMqttTopic();
 
@@ -91,6 +96,7 @@ void setup()
 
 void loop()
 {
+  
   reconnectWifiIfLinkDown();
 
 
@@ -101,9 +107,6 @@ void loop()
   else
   {
     DEBUG_PRINTLN("CLIENT DISCONNECTD");
-    last_free_heap = ESP.getFreeHeap();
     reconnectMqtt();
-    DEBUG_PRINT("DIFF HEAP = ");
-    DEBUG_PRINTLN(last_free_heap - ESP.getFreeHeap());     
   }
 }

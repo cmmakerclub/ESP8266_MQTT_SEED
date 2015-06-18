@@ -42,6 +42,8 @@ PubSubClient *client;
 
 unsigned long prevMillisPub = 0;
 #define PAYLOAD_SIZE 800
+static long int last_free_heap = 0;
+
 
 static StaticJsonBuffer<PAYLOAD_SIZE> jsonBuffer;
 JsonObject& root = jsonBuffer.createObject();
@@ -54,6 +56,23 @@ void connectWifi(void);
 void subscribeMqttTopic(void);
 
 
+static void logHeap(int mode, const char* when) {
+  if (mode == 0) {
+    last_free_heap = ESP.getFreeHeap();
+//    DEBUG_PRINT("       MODE: 0 -> ");    
+//    DEBUG_PRINT(ESP.getFreeHeap());      
+  }
+  else if (mode == 1) {
+//    DEBUG_PRINT("       MODE: 1 -> ");          
+//    DEBUG_PRINT(ESP.getFreeHeap());    
+    DEBUG_PRINT(when);    
+    DEBUG_PRINT("____ HEAP DIFF = ");
+      
+    DEBUG_PRINTLN(last_free_heap - ESP.getFreeHeap());    
+  }
+
+}
+
 
 void initPubSubClient()
 {
@@ -63,8 +82,24 @@ void initPubSubClient()
     DEBUG_PRINT("DELETING  ... client - ");
   }
   client = new PubSubClient(MQTT_HOST, MQTT_PORT);
+
 }
 
+void initConnOpts() {
+
+  if (connOpts != NULL) {
+    DEBUG_PRINTLN("___Deleting connOpts...");
+    delete connOpts;
+    connOpts = NULL;
+  }
+
+  logHeap(0, "");
+  connOpts = new MQTT::Connect(clientId);
+  connOpts->set_auth(MQTT_USER, MQTT_PASS);
+  connOpts->set_keepalive(2);
+
+  logHeap(1, "INIT CONN OPTS");
+}
 
 char* getClientId()
 {
@@ -131,8 +166,6 @@ void connectWifi()
 
 char* getDefaultTopic()
 {
-  clientId = getClientId();
-
   if (clientTopic != NULL) {
     DEBUG_PRINT("___DELETING ... clientTopic - ");
     DEBUG_PRINTLN(clientTopic);
@@ -140,13 +173,13 @@ char* getDefaultTopic()
     clientTopic = NULL;
   }
 
-  clientTopic = (char* )malloc(strlen(clientId) + 6);
-  memcpy(clientTopic, clientId, strlen(clientId));
-  strcpy(clientTopic + strlen(clientId), "/data");
-  DEBUG_PRINT("_clientTopic_SIZE: ");
-  DEBUG_PRINTLN(strlen(clientTopic));
+  char* tmp = (char* )malloc(strlen(clientId) + 6);
+  memcpy(tmp, clientId, strlen(clientId));
+  strcpy(tmp + strlen(clientId), "/data");
+  
+  DEBUG_PRINT("_DEFALT_TOPIC_: ");
 
-  return clientTopic;
+  return tmp;
 }
 
 void prepareClientIdAndClientTopic()
@@ -183,17 +216,7 @@ void reconnectWifiIfLinkDown()
 void connectMqtt()
 {
   uint16_t retries = 0;
-  prepareClientIdAndClientTopic();
 
-  if (connOpts != NULL) {
-    DEBUG_PRINTLN("___Deleting connOpts...");
-    delete(connOpts);
-    connOpts = NULL;
-  }
-
-  connOpts = new MQTT::Connect(clientId);
-  connOpts->set_auth(MQTT_USER, MQTT_PASS);
-  connOpts->set_keepalive(5);
 
   int result;
   // Connect to mqtt broker
@@ -206,10 +229,10 @@ void connectMqtt()
     DEBUG_PRINT(", ");
     DEBUG_PRINT(clientTopic);
     DEBUG_PRINTLN("]");
-
-
-    yield();
+    logHeap(0, "SUBSCriBE");  
+    initConnOpts();
     result = client->connect(*connOpts);
+    logHeap(1, "CALL CONNECT");      
     MQTT_CONNECTED_FLAG = result;
     if (result == 1)
     {
@@ -264,7 +287,7 @@ void subscribeMqttTopic()
 
     DEBUG_PRINTLN(result);;
     DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBING);
-    yield();
+    delay(100);
   }
   DEBUG_PRINTLN(STATE_MQTT_SUBSCRIBED);
   DEBUG_PRINTLN(clientId);
@@ -272,14 +295,19 @@ void subscribeMqttTopic()
 
 void reconnectMqtt()
 {
+  logHeap(0, "");
   connectMqtt();
+  logHeap(1, "CONNECT MQTT");  
   if (WiFi.status() != WL_CONNECTED)
   {
     DEBUG_PRINTLN("DO NOT SUBSCRIBE... WIFI DISCONNECTED!!");
   }
   else
   {
+  logHeap(0, "SUBSCriBE");  
     subscribeMqttTopic();
+
+  logHeap(1, "SUBSCriBE");  
   }
 }
 
@@ -305,10 +333,10 @@ void publishMqttData(const char* clientTopic, JsonObject &r)
   root["counter"] = ++counter;
 
   root.printTo(payload, sizeof(payload));
-  DEBUG_PRINT("PAYLOAD LEN: ");
-  DEBUG_PRINT(strlen(payload));
-  DEBUG_PRINT(" SIZE: ");
-  DEBUG_PRINT(sizeof(payload));
+//  DEBUG_PRINT("PAYLOAD LEN: ");
+//  DEBUG_PRINT(strlen(payload));
+//  DEBUG_PRINT(" SIZE: ");
+//  DEBUG_PRINT(sizeof(payload));
 
   while (!client->publish(clientTopic, payload))
   {
