@@ -36,25 +36,25 @@ const char* pass = "5k,skrijv',7'sik";
 // } config_t;
 
 #include "header.h"
- 
+
 
 void callback(const MQTT::Publish& pub)
 {
-  // MQTT SUBSCRIBE
-  if (pub.payload_string() == "0")
-  {
-    DEBUG_PRINTLN("GOT STRING 0...");
-  }
-  else if (pub.payload_string() == "1")
-  {
-    DEBUG_PRINTLN("GOT STRING 1..");
-  }
-  else
-  {
-    DEBUG_PRINT(pub.topic());
-    DEBUG_PRINT(" => ");
-    DEBUG_PRINTLN(pub.payload_string());
-  }
+    // MQTT SUBSCRIBE
+    if (pub.payload_string() == "0")
+    {
+        DEBUG_PRINTLN("GOT STRING 0...");
+    }
+    else if (pub.payload_string() == "1")
+    {
+        DEBUG_PRINTLN("GOT STRING 1..");
+    }
+    else
+    {
+        DEBUG_PRINT(pub.topic());
+        DEBUG_PRINT(" => ");
+        DEBUG_PRINTLN(pub.payload_string());
+    }
 
 
 }
@@ -65,48 +65,48 @@ void callback(const MQTT::Publish& pub)
 
 void fn_publisher()
 {
-  root["secs"] = millis()/1000;
+    root["secs"] = millis()/1000;
 //  root["micros"] = micros();
 //  root["cycle_count"] = ESP.getCycleCount();
 //  root["chip_id"] = ESP.getChipId();
-  root["free_heap"] = ESP.getFreeHeap();
-  root["nickname"] = DEVICE_NAME;
+    root["free_heap"] = ESP.getFreeHeap();
+    root["nickname"] = DEVICE_NAME;
 
-  
-  publishMqttData(clientTopic, root);
+
+    publishMqttData(clientTopic, root);
 
 
 }
 
 void setup()
 {
-  initHardware();
-  connectWifi();
-  initPubSubClient();
-  client->set_callback(callback);
-  prepareClientIdAndClientTopic();
-  initConnOpts();
-  connectMqtt();
-  subscribeMqttTopic();
+    initHardware();
+    connectWifi();
+    initPubSubClient();
+    client->set_callback(callback);
+    prepareClientIdAndClientTopic();
+    initConnOpts();
+    connectMqtt();
+    subscribeMqttTopic();
 
-  // READY
-  DEBUG_PRINTLN(STATE_READY_TO_GO);
+    // READY
+    DEBUG_PRINTLN(STATE_READY_TO_GO);
 }
 
 
 void loop()
 {
-  
-  reconnectWifiIfLinkDown();
+
+    reconnectWifiIfLinkDown();
 
 
-  if (client->loop())
-  {
-    fn_publisher();
-  }
-  else
-  {
-    DEBUG_PRINTLN("CLIENT DISCONNECTD");
-    reconnectMqtt();
-  }
+    if (client->loop())
+    {
+        fn_publisher();
+    }
+    else
+    {
+        DEBUG_PRINTLN("CLIENT DISCONNECTD");
+        reconnectMqtt();
+    }
 }
